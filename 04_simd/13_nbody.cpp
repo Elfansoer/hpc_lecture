@@ -3,7 +3,7 @@
 #include <cmath>
 #include <immintrin.h>
 
-// for Windows testing
+// // for Windows testing
 // float drand48() {
 //   return rand() / (RAND_MAX + 1.0);
 // }
@@ -25,11 +25,15 @@ int main() {
     a[i] = i;
   }
 
-  // init mask & mass
+  // init mask
   __m256 zmask = _mm256_set1_ps( 1 );
   __m256 omask = _mm256_setzero_ps();
   __m256 imask = _mm256_load_ps( a );
+
+  // init consts
   __m256 mmvec = _mm256_load_ps( m );
+  __m256 xjvec = _mm256_load_ps( x );
+  __m256 yjvec = _mm256_load_ps( y );
 
   for(int i=0; i<N; i++) {
     // create 2 masks; equal and not equal
@@ -42,8 +46,6 @@ int main() {
     // init vectors
     __m256 xivec = _mm256_set1_ps( x[i] );
     __m256 yivec = _mm256_set1_ps( y[i] );
-    __m256 xjvec = _mm256_load_ps( x );
-    __m256 yjvec = _mm256_load_ps( y );
 
     // sub, square, add
     __m256 rxvec = _mm256_sub_ps( xivec, xjvec );
@@ -52,10 +54,10 @@ int main() {
     __m256 y2vec = _mm256_mul_ps( ryvec, ryvec );
     __m256 xyvec = _mm256_add_ps( x2vec, y2vec );
 
-    // add the i==j element with 1 to avoid div by 0 using mask
+    // add the i==j element with 1 to avoid div by 0 using equal mask
     __m256 rrvec = _mm256_add_ps( xyvec, emask );
 
-    // calculate 1/r, pow3, and mask
+    // calculate 1/r, pow3, and ne-mask
     rrvec = _mm256_rsqrt_ps( rrvec );
     __m256 temp1 = rrvec;
     rrvec = _mm256_mul_ps( rrvec, temp1 );
@@ -67,7 +69,7 @@ int main() {
     __m256 xisum = _mm256_mul_ps( rxvec, xysum );
     __m256 yisum = _mm256_mul_ps( ryvec, xysum );
 
-    // reduce, substract, store fx
+    // reduce, store, substract fx
     __m256 xrsum = _mm256_permute2f128_ps(xisum,xisum,1);
     xrsum = _mm256_add_ps(xrsum,xisum);
     xrsum = _mm256_hadd_ps(xrsum,xrsum);
@@ -75,7 +77,7 @@ int main() {
     _mm256_store_ps(b, xrsum);
     fx[i] -= b[0];
 
-    // reduce, substract, store fy
+    // reduce, store, substract fy
     __m256 yrsum = _mm256_permute2f128_ps(yisum,yisum,1);
     yrsum = _mm256_add_ps(yrsum,yisum);
     yrsum = _mm256_hadd_ps(yrsum,yrsum);
