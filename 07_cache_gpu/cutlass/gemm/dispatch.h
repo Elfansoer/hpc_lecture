@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "../util/util.h"
 #include "block_task.h"
-#include "grid_raster.h"
+// #include "grid_raster.h"
 #include "k_split_control.h"
 
 namespace cutlass {
@@ -134,19 +134,29 @@ launch_configuration dispatch(
     // Thread block rasterization type
   static const matrix_transform_t::kind_t TransformA = matrix_transform_t::NonTranspose;
   static const matrix_transform_t::kind_t TransformB = matrix_transform_t::NonTranspose;
+
   epilogue_op_t epilogue(alpha, beta);
-  typedef grid_raster<
-    64,
-    64,
-    TransformA,
-    TransformB,
-    grid_raster_strategy::Default>
-    grid_raster_t;
+  // typedef grid_raster<
+  //   64,
+  //   64,
+  //   TransformA,
+  //   TransformB,
+  //   grid_raster_strategy::Default>
+  //   grid_raster_t;
   launch_configuration config;
+
+  dim3 grid = dim3(
+    (m + 64 - 1) / 64,
+    (n + 64 - 1) / 64
+  );
+  dim3 block = dim3(64);
+  
+  // int dynamic_smem_bytes = 0;
+  // config.grid = grid_raster_t::grid_dims(m, n);
+  config.grid = grid;
   config.block = dim3(64);
-  int dynamic_smem_bytes = 0;
+  
   int max_sm_occupancy = 8;
-  config.grid = grid_raster_t::grid_dims(m, n);
   int sm_count;
   get_sm_count(sm_count);
   int *d_flags;
@@ -161,10 +171,14 @@ launch_configuration dispatch(
                           config.block,
                           config.grid);
   config.split_k = k_split.split_k;
+
   gemm::kernel<epilogue_op_t>
-    <<< config.grid,
-    config.block,
-    dynamic_smem_bytes,
+    // <<< config.grid,
+    // config.block,
+    // dynamic_smem_bytes,
+    <<< grid,
+    block,
+    0,
     stream >>>(
                m,
                n,
