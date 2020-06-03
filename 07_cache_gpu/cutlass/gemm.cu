@@ -26,13 +26,9 @@ int main(int argc, const char **argv) {
   float beta = 0.0;
   int g_timing_iterations = 10;
 
-  // static const matrix_transform_t::kind_t TransformA = matrix_transform_t::NonTranspose;
-  // static const matrix_transform_t::kind_t TransformB = matrix_transform_t::NonTranspose;
   static const int TransformA = 0;
   static const int TransformB = 0;
 
-  // typedef float value_t;
-  // typedef float accum_t;
   cudaStream_t stream = 0;
 
   // definitions
@@ -41,10 +37,6 @@ int main(int argc, const char **argv) {
   cudaMallocManaged(&B, k*n * sizeof(float) );
   cudaMallocManaged(&C, m*n * sizeof(float) );
   cudaMallocManaged(&C2, m*n * sizeof(float) );
-  // matrix<float> A(m, k);
-  // matrix<float> B(k, n);
-  // matrix<float> C(m, n);
-  // matrix<float> C2(m, n);
 
   // fill out
   for( int jndex=0; jndex<k; jndex++ ) {
@@ -63,15 +55,7 @@ int main(int argc, const char **argv) {
       C2[jndex*m + index] = 0;
     }
   }
-  cudaDeviceSynchronize();  
-  // A.random();
-  // B.random();
-  // C.fill_ramp(0,0);
-  // C2.fill_ramp(0,0);
-  // A.sync_device();
-  // B.sync_device();
-  // C.sync_device();
-  // C2.sync_device();
+  cudaDeviceSynchronize(); 
 
   // CUBLAS
   cublasHandle_t g_cublas_handle;
@@ -79,21 +63,6 @@ int main(int argc, const char **argv) {
   gpu_timer timer;
   for (int i = 0; i < g_timing_iterations+2; i++) {
     if (i == 2) timer.start();
-    // CUDA_PERROR(cublasSgemm(
-    //                         g_cublas_handle,
-    //                         (cublasOperation_t) TransformA,
-    //                         (cublasOperation_t) TransformB,
-    //                         m,
-    //                         n,
-    //                         k,
-    //                         &alpha,
-    //                         A.d_data(),
-    //                         m,
-    //                         B.d_data(),
-    //                         k,
-    //                         &beta,
-    //                         C.d_data(),
-    //                         m));
     CUDA_PERROR(cublasSgemm(
                             g_cublas_handle,
                             (cublasOperation_t) TransformA,
@@ -122,17 +91,6 @@ int main(int argc, const char **argv) {
   epilogue_op_t epilogue(alpha, beta);
   for (int i = 0; i < g_timing_iterations+2; i++) {
     if (i == 2) timer.start();
-    // gemm::dispatch<epilogue_op_t>(
-    //     m,
-    //     n,
-    //     k,
-    //     alpha,
-    //     beta,
-    //     A.d_data(),
-    //     B.d_data(),
-    //     C2.d_data(),
-    //     stream,
-    //     false);
     gemm::dispatch<epilogue_op_t>(
         m,
         n,
@@ -153,8 +111,6 @@ int main(int argc, const char **argv) {
 
   // error performance summary. No need to optimize below this line
   printf("CUBLAS: %.2f Gflops, CUTLASS: %.2f Gflops\n", cublas_flops, cutlass_flops);
-  // C.sync_host();
-  // C2.sync_host();
   cudaDeviceSynchronize();  
 
   double err = 0;

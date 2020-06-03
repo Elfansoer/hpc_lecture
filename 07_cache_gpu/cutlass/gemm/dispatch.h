@@ -131,29 +131,13 @@ launch_configuration dispatch(
                                                     ///  to check for errors.  Also causes launch configurations to be printed
                                                     ///  to the console if DEBUG is defined.  Default is \p false.
 {
-    // Thread block rasterization type
-  static const matrix_transform_t::kind_t TransformA = matrix_transform_t::NonTranspose;
-  static const matrix_transform_t::kind_t TransformB = matrix_transform_t::NonTranspose;
-
   epilogue_op_t epilogue(alpha, beta);
-  // typedef grid_raster<
-  //   64,
-  //   64,
-  //   TransformA,
-  //   TransformB,
-  //   grid_raster_strategy::Default>
-  //   grid_raster_t;
   launch_configuration config;
 
-  dim3 grid = dim3(
+  config.grid = dim3(
     (m + 64 - 1) / 64,
     (n + 64 - 1) / 64
   );
-  dim3 block = dim3(64);
-  
-  // int dynamic_smem_bytes = 0;
-  // config.grid = grid_raster_t::grid_dims(m, n);
-  config.grid = grid;
   config.block = dim3(64);
   
   int max_sm_occupancy = 8;
@@ -173,13 +157,10 @@ launch_configuration dispatch(
   config.split_k = k_split.split_k;
 
   gemm::kernel<epilogue_op_t>
-    // <<< config.grid,
-    // config.block,
-    // dynamic_smem_bytes,
-    <<< grid,
-    block,
+    <<< config.grid,
+    config.block,
     0,
-    stream >>>(
+    0 >>>(
                m,
                n,
                k,
