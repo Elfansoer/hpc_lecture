@@ -8,7 +8,7 @@ struct Body {
 };
 
 int main(int argc, char** argv) {
-  const int N = 20;
+  const int N = 10000;
   MPI_Init(&argc, &argv);
   int size, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
     MPI_Win_fence(0, win);
     MPI_Put(buffer, N/size, MPI_BODY, send_to, 0, N/size, MPI_BODY, win);
     MPI_Win_fence(0, win);
+#pragma omp parallel for
     for(int i=0; i<N/size; i++) {
       for(int j=0; j<N/size; j++) {
         double rx = ibody[i].x - jbody[j].x;
@@ -49,11 +50,9 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     if(irank==rank) {
       for(int i=0; i<N/size; i++) {
-        printf("%d %g %g\n",i+rank*N/size,ibody[i].fx,ibody[i].fy);
+        //printf("%d %g %g\n",i+rank*N/size,ibody[i].fx,ibody[i].fy);
       }
     }
   }
-
-  MPI_Win_free(&win);
   MPI_Finalize();
 }
